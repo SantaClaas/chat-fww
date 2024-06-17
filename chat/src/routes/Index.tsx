@@ -28,7 +28,7 @@ export default function Index() {
           <For each={users()}>
             {(user) => (
               <li>
-                <a href={`/messages/${user}`}>{user}</a>
+                <a href={`/chats/${user}`}>{user}</a>
               </li>
             )}
           </For>
