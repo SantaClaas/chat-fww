@@ -32,7 +32,7 @@ async function handleMessage(event: MessageEvent) {
 
   const [, setMessages] = signal;
 
-  setMessages((messages) => [...messages, message]);
+  setMessages((messages) => [message, ...messages]);
 }
 
 const state = { socket, name, setName, messagesByUser };
