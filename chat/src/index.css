@@ -1,3 +1,10 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  /* Some fun opinionated base styles */
+  :root {
+    @apply bg-slate-100 text-slate-900 caret-orange-600 selection:bg-orange-600 selection:text-slate-100 accent-orange-600;
+  }
+}
