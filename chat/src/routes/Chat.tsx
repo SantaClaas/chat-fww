@@ -80,21 +80,42 @@ export default function Chat() {
   createEffect(() => console.debug(messages()));
 
   return (
-    <main>
-      <h1>Chat with {contactName}</h1>
-      <Show when={messages() && messages()!.length > 0}>
-        <ol>
-          <For each={messages()}>{(message) => <li>{message.text}</li>}</For>
-        </ol>
-      </Show>
-      <form onSubmit={handleSubmit}>
-        <label
-          for="message"
-          class="block text-sm font-medium leading-6 text-gray-900"
+    <>
+      <header class="px-1 py-2 grid grid-cols-[3rem,1fr,3rem] gap-1 bg-slate-100">
+        <a href="/" class="p-3 text-slate-900">
+          <span class="sr-only">go back</span>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            height="24px"
+            viewBox="0 -960 960 960"
+            width="24px"
+            fill="currentColor"
+          >
+            <path d="m313-440 224 224-57 56-320-320 320-320 57 56-224 224h487v80H313Z" />
+          </svg>
+        </a>
+        <h1 class="text-xl font-normal content-center text-center">
+          {contactName}
+        </h1>
+      </header>
+
+      <main class="bg-slate-100 grid grid-rows-[1fr_auto] px-4 pb-2">
+        <Show
+          when={messages() && messages()!.length > 0}
+          fallback={
+            <p class="text-center">Start chatting by writing a message</p>
+          }
         >
-          Message
-        </label>
-        <div class="relative flex items-center mt-2">
+          <ol>
+            <For each={messages()}>{(message) => <li>{message.text}</li>}</For>
+          </ol>
+        </Show>
+
+        {/* <div class="fixed inset-x-0 p-4 bottom-0"> */}
+        <form onSubmit={handleSubmit} class="relative flex items-center mt-2">
+          <label for="message" class="sr-only">
+            Message
+          </label>
           <input
             type="text"
             name="message"
@@ -106,8 +127,9 @@ export default function Chat() {
               ↵
             </kbd>
           </div>
-        </div>
-      </form>
-    </main>
+        </form>
+        {/* </div> */}
+      </main>
+    </>
   );
 }
