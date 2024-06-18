@@ -1,6 +1,10 @@
+use std::error::Error;
 use std::{collections::HashMap, sync::Arc};
 
+use crate::actor::user::Handle;
+use crate::actor::{delivery_service, websocket};
 use actor::user;
+use axum::http::StatusCode;
 use axum::{
     extract::{ws::WebSocket, Path, State, WebSocketUpgrade},
     http::{HeaderValue, Method},
@@ -16,7 +20,7 @@ mod actor;
 
 #[derive(Clone, Default)]
 struct AppState {
-    users: Arc<Mutex<HashMap<Arc<str>, user::Handle>>>,
+    delivery_service: delivery_service::Handle,
 }
 
 #[tokio::main]
@@ -41,9 +45,7 @@ async fn main() {
                 // .allow_origin("localhost:1421".parse::<HeaderValue>().unwrap())
                 .allow_methods([Method::GET]),
         )
-        .with_state(AppState {
-            users: Default::default(),
-        });
+        .with_state(Default::default());
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
         .await
@@ -53,16 +55,15 @@ async fn main() {
     axum::serve(listener, app).await.unwrap();
 }
 
-async fn get_users(State(state): State<AppState>) -> Json<Vec<String>> {
-    let users = state.users.lock().await;
-    let users = users
-        .keys()
-        .map(|user| user.to_string())
-        .collect::<Vec<_>>();
-
-    dbg!(&users);
-
-    Json(users)
+async fn get_users(State(state): State<AppState>) -> Result<Json<Arc<[Arc<str>]>>, StatusCode> {
+    let result = state.delivery_service.get_users().await;
+    match result {
+        Ok(users) => Ok(Json(users)),
+        Err(error) => {
+            tracing::error!("Error getting users: {:?}", error);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
 }
 
 async fn websocket_handler(
@@ -75,16 +76,23 @@ async fn websocket_handler(
 
 // 2/3e, duck2duck encryption, melt
 async fn create_actor(stream: WebSocket, State(state): State<AppState>, name: Arc<str>) {
-    let mut users = state.users.lock().await;
-    let entry = users.entry(name.clone());
-    // Get or create user actor
-    let user = entry.or_insert_with(|| user::Handle::new(name));
+    let result = state.delivery_service.get_or_insert(name).await;
 
-    // Create websocket actor
-    let socket = actor::websocket::Handle::new(stream, user.clone());
+    let user = match result {
+        Ok(user) => user,
+        Err(error) => {
+            tracing::error!(
+                "Error getting/creating user for websocket connection: {:?}",
+                error
+            );
+            return;
+        }
+    };
+
+    let socket = websocket::Handle::new(stream, user.clone());
     let result = user.add_socket(socket).await;
-
-    if let Err(error) = result {
-        tracing::error!("Error adding socket: {}", error);
-    }
+    let Err(error) = result else {
+        return;
+    };
+    tracing::error!("Error adding socket: {}", error);
 }

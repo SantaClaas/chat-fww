@@ -5,8 +5,13 @@ edition = "2021"
 
 [dependencies]
 axum = { version = "0.7.5", features = ["macros", "ws"] }
-serde = "1.0.203"
+nanoid = "0.4.0"
+# About the "rc" feature: Yes, I know the underlying data of a rc is cloned on serialization, but until then it is more
+# convenient to throw around references to the data than the data itself. Could be wrong though. I'm not a memory wizard.
+serde = { version = "1.0.203", features = ["derive", "rc"] }
 serde_json = "1.0.117"
+thiserror = "1.0.61"
+time = { version = "0.3.36", features = ["serde"] }
 tokio = { version = "1.38.0", features = ["full"] }
 tower-http = { version = "0.5.2", features = ["cors"] }
 tracing = "0.1.40"
