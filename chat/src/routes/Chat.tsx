@@ -1,24 +1,66 @@
-import { useParams } from "@solidjs/router";
-import { useWebSocket } from "../context";
+import { useNavigate, useParams } from "@solidjs/router";
+import { useName, useWebSocket } from "../context";
+import { createEffect } from "solid-js";
+
+/**
+ * This type has to be kept in sync with the server-side types
+ */
+export type Message = {
+  to: string;
+  from: string;
+  text: string;
+  /**
+   * UTC unix timestamp in seconds
+   */
+  time: number;
+};
 
 export default function Chat() {
-  const paramters = useParams();
+  const parameters = useParams();
   const socket = useWebSocket();
+  const [name] = useName();
+  const navigate = useNavigate();
+
+  const isValidContactName = () =>
+    typeof parameters.name === "string" && parameters.name.length > 0;
+  const contactName = () =>
+    isValidContactName() ? decodeURI(parameters.name) : null;
+
+  createEffect(() => {
+    if (!isValidContactName()) {
+      // Go back to chat list
+      //TODO inform user what happened
+      navigate("/");
+      return;
+    }
+  });
 
   function handleSubmit(event: SubmitEvent) {
+    if (!(event.target instanceof HTMLFormElement))
+      throw new Error("Invalid event target for form submission");
+
     event.preventDefault();
-    // @ts-ignore
-    const message: string = event.target.message.value;
-    console.debug(message);
+    const messageText: string = event.target.message.value;
+    console.debug(messageText);
 
-    socket()?.send(message);
+    const from = name();
+    const to = contactName();
+    if (from === null || to === null) return;
 
-    // @ts-ignore
+    const message = {
+      to,
+      from,
+      text: messageText,
+      time: Date.now(),
+    } satisfies Message;
+
+    socket()?.send(JSON.stringify(message));
+
     event.target.reset();
   }
   return (
     <main>
-      <h1>Chat with {decodeURI(paramters.name)}</h1>
+      <h1>Chat with {contactName()}</h1>
       <ol></ol>
       <form onSubmit={handleSubmit}>
         <label
