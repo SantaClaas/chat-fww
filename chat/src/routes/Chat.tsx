@@ -74,7 +74,7 @@ export default function Chat() {
     // Add to local messages
     const setter = setMessages();
     if (setter === undefined) return;
-    setter((previous) => [...previous, message]);
+    setter((previous) => [message, ...previous]);
   }
 
   createEffect(() => console.debug(messages()));
@@ -103,11 +103,27 @@ export default function Chat() {
         <Show
           when={messages() && messages()!.length > 0}
           fallback={
-            <p class="text-center">Start chatting by writing a message</p>
+            <article class="text-center bg-slate-50 rounded-3xl p-4">
+              Start chatting by writing a message
+            </article>
           }
         >
-          <ol>
-            <For each={messages()}>{(message) => <li>{message.text}</li>}</For>
+          <ol class="bg-slate-50 rounded-3xl p-4 flex flex-col-reverse gap-4">
+            <For each={messages()}>
+              {(message) => (
+                <li
+                  class=" px-4 py-1 max-w-fit text-slate-50"
+                  classList={{
+                    "bg-gradient-to-br from-slate-800 to-slate-600 rounded-bl-xl rounded-t-xl self-end":
+                      message.sender === name(),
+                    "bg-gradient-to-tl from-orange-600 to-orange-400 rounded-tr-xl rounded-b-xl":
+                      message.sender !== name(),
+                  }}
+                >
+                  {message.text}
+                </li>
+              )}
+            </For>
           </ol>
         </Show>
 
@@ -120,10 +136,11 @@ export default function Chat() {
             type="text"
             name="message"
             id="message"
-            class="block w-full rounded-md border-0 py-1.5 pr-14 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-orange-600 sm:text-sm sm:leading-6"
+            placeholder="Type a message..."
+            class="block w-full rounded-2xl px-4 border-0 py-1.5 pr-14 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-orange-600 sm:text-sm sm:leading-6"
           />
           <div class="absolute inset-y-0 right-0 flex py-1.5 pr-1.5">
-            <kbd class="inline-flex items-center px-1 font-sans text-xs text-gray-400 border border-gray-200 rounded">
+            <kbd class="inline-flex items-center px-1 font-sans text-xs text-gray-400 border border-gray-200 rounded-2xl">
               ↵
             </kbd>
           </div>
