@@ -1,5 +1,6 @@
 import {
   JSX,
+  Signal,
   createContext,
   createEffect,
   createSignal,
@@ -12,7 +13,27 @@ const [name, setName] = createSignal<string | null>(
 );
 const [socket, setSocket] = createSignal<WebSocket | undefined>();
 // Not sure if using a map is better
-const messagesByUser = new Map<string, ChatMessage[]>();
+const messagesByUser = new Map<string, Signal<ChatMessage[]>>();
+
+async function handleMessage(event: MessageEvent) {
+  if (typeof event.data !== "string")
+    throw new Error("Message is not a string");
+
+  console.debug("Received message", event.data);
+  // For now we just pray it's right 🙂
+  const message = JSON.parse(event.data) as ChatMessage;
+
+  let signal = messagesByUser.get(message.sender);
+
+  if (signal === undefined) {
+    signal = createSignal<ChatMessage[]>([]);
+    messagesByUser.set(message.sender, signal);
+  }
+
+  const [, setMessages] = signal;
+
+  setMessages((messages) => [...messages, message]);
+}
 
 const state = { socket, name, setName, messagesByUser };
 const Context = createContext(state);
@@ -20,9 +41,11 @@ createEffect<WebSocket | undefined>((previous) => {
   const id = name();
   if (id === null) return previous;
 
+  previous?.removeEventListener("message", handleMessage);
   previous?.close();
 
   const newSocket = new WebSocket(`ws://localhost:3000/messages/${id}`);
+  newSocket.addEventListener("message", handleMessage);
   setSocket(newSocket);
   return newSocket;
 }, socket());

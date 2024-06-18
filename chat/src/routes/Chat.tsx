@@ -1,6 +1,6 @@
 import { useNavigate, useParams } from "@solidjs/router";
 import { useAppContext } from "../context";
-import { createEffect } from "solid-js";
+import { For, Show, createEffect, createSignal } from "solid-js";
 
 /**
  * This type has to be kept in sync with the server-side types
@@ -17,50 +17,76 @@ export type ChatMessage = {
 
 export default function Chat() {
   const parameters = useParams();
-  const { socket, name } = useAppContext();
+  const { socket, name, messagesByUser } = useAppContext();
   const navigate = useNavigate();
 
-  const isValidContactName = () =>
-    typeof parameters.name === "string" && parameters.name.length > 0;
-  const contactName = () =>
-    isValidContactName() ? decodeURI(parameters.name) : null;
+  if (parameters.name === undefined || parameters.name.length === 0) {
+    navigate("/");
+    return;
+  }
 
-  createEffect(() => {
-    if (!isValidContactName()) {
-      // Go back to chat list
-      //TODO inform user what happened
-      navigate("/");
-      return;
+  const contactName = decodeURI(parameters.name);
+
+  const messagesSignal = () => {
+    let signal = messagesByUser.get(contactName);
+    if (signal === undefined) {
+      signal = createSignal<ChatMessage[]>([]);
+      messagesByUser.set(contactName, signal);
     }
-  });
+
+    return signal;
+  };
+
+  const messages = () => {
+    const messages = messagesSignal();
+    if (messages === undefined) return;
+    return messages[0]();
+  };
+
+  const setMessages = () => {
+    const messages = messagesSignal();
+    if (messages === undefined) return;
+    return messages[1];
+  };
 
   function handleSubmit(event: SubmitEvent) {
     if (!(event.target instanceof HTMLFormElement))
       throw new Error("Invalid event target for form submission");
 
     event.preventDefault();
-    const messageText: string = event.target.message.value;
-    console.debug(messageText);
+    const text: string = event.target.message.value;
+    console.debug(text);
 
-    const from = name();
-    const to = contactName();
-    if (from === null || to === null) return;
+    const sender = name();
+    const recipient = contactName;
+    if (sender === null || recipient === null) return;
 
     const message = {
-      recipient: to,
-      sender: from,
-      text: messageText,
+      recipient,
+      sender,
+      text: text,
       time_utc: Date.now(),
     } satisfies ChatMessage;
 
     socket()?.send(JSON.stringify(message));
-
     event.target.reset();
+
+    // Add to local messages
+    const setter = setMessages();
+    if (setter === undefined) return;
+    setter((previous) => [...previous, message]);
   }
+
+  createEffect(() => console.debug(messages()));
+
   return (
     <main>
-      <h1>Chat with {contactName()}</h1>
-      <ol></ol>
+      <h1>Chat with {contactName}</h1>
+      <Show when={messages() && messages()!.length > 0}>
+        <ol>
+          <For each={messages()}>{(message) => <li>{message.text}</li>}</For>
+        </ol>
+      </Show>
       <form onSubmit={handleSubmit}>
         <label
           for="message"
