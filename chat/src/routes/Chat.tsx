@@ -6,13 +6,13 @@ import { createEffect } from "solid-js";
  * This type has to be kept in sync with the server-side types
  */
 export type Message = {
-  to: string;
-  from: string;
+  recipient: string;
+  sender: string;
   text: string;
   /**
    * UTC unix timestamp in seconds
    */
-  time: number;
+  time_utc: number;
 };
 
 export default function Chat() {
@@ -48,10 +48,10 @@ export default function Chat() {
     if (from === null || to === null) return;
 
     const message = {
-      to,
-      from,
+      recipient: to,
+      sender: from,
       text: messageText,
-      time: Date.now(),
+      time_utc: Date.now(),
     } satisfies Message;
 
     socket()?.send(JSON.stringify(message));

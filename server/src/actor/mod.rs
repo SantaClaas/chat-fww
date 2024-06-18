@@ -8,12 +8,11 @@ pub(super) mod websocket;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub(in crate::actor) struct ChatMessage {
-    pub(super) to: Arc<str>,
-    from: String,
+    pub(super) recipient: Arc<str>,
+    sender: String,
     text: String,
     #[serde(
         with = "time::serde::timestamp::milliseconds",
-        rename = "time"
     )]
     time_utc: OffsetDateTime,
 }
