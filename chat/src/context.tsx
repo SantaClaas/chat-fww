@@ -5,12 +5,16 @@ import {
   createSignal,
   useContext,
 } from "solid-js";
+import { ChatMessage } from "./routes/Chat";
 
 const [name, setName] = createSignal<string | null>(
   localStorage.getItem("name")
 );
 const [socket, setSocket] = createSignal<WebSocket | undefined>();
-const state = { socket, name, setName };
+// Not sure if using a map is better
+const messagesByUser = new Map<string, ChatMessage[]>();
+
+const state = { socket, name, setName, messagesByUser };
 const Context = createContext(state);
 createEffect<WebSocket | undefined>((previous) => {
   const id = name();
@@ -29,14 +33,8 @@ export function ContextProvider(properties: { children: JSX.Element }) {
   );
 }
 
-export function useName() {
-  const { name, setName } = useContext(Context);
-
-  return [name, setName] as const;
-}
-
-export function useWebSocket(onmessage?: (event: MessageEvent) => any) {
-  const { socket } = useContext(Context);
+export function useAppContext(onmessage?: (event: MessageEvent) => any) {
+  const { socket, ...rest } = useContext(Context);
 
   createEffect<WebSocket | undefined>((previous) => {
     const current = socket();
@@ -47,5 +45,5 @@ export function useWebSocket(onmessage?: (event: MessageEvent) => any) {
     return current;
   }, socket());
 
-  return socket;
+  return { socket, ...rest };
 }

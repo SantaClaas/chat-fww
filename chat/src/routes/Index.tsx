@@ -1,5 +1,5 @@
-import { For, Match, Show, createResource, createSignal } from "solid-js";
-import { useName, useWebSocket } from "../context";
+import { For, Show, createResource } from "solid-js";
+import { useAppContext } from "../context";
 import { Navigate } from "@solidjs/router";
 
 async function fetchUsers() {
@@ -8,8 +8,7 @@ async function fetchUsers() {
   return data;
 }
 export default function Index() {
-  const socket = useWebSocket();
-  const [name] = useName();
+  const { socket, name } = useAppContext();
 
   if (socket() === undefined || name() === undefined)
     return <Navigate href="/setup" />;

@@ -1,9 +1,9 @@
 import { useNavigate } from "@solidjs/router";
-import { useName } from "../context";
+import { useAppContext } from "../context";
 import { createEffect } from "solid-js";
 
 export default function SetUp() {
-  const [name, setName] = useName();
+  const { name, setName } = useAppContext();
   function handleSubmit(event: SubmitEvent) {
     event.preventDefault();
     // @ts-ignore Access form element called "name" and get the value. TS doesn't know about the DOM structure.

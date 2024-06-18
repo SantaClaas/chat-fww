@@ -1,11 +1,11 @@
 import { useNavigate, useParams } from "@solidjs/router";
-import { useName, useWebSocket } from "../context";
+import { useAppContext } from "../context";
 import { createEffect } from "solid-js";
 
 /**
  * This type has to be kept in sync with the server-side types
  */
-export type Message = {
+export type ChatMessage = {
   recipient: string;
   sender: string;
   text: string;
@@ -17,8 +17,7 @@ export type Message = {
 
 export default function Chat() {
   const parameters = useParams();
-  const socket = useWebSocket();
-  const [name] = useName();
+  const { socket, name } = useAppContext();
   const navigate = useNavigate();
 
   const isValidContactName = () =>
@@ -52,7 +51,7 @@ export default function Chat() {
       sender: from,
       text: messageText,
       time_utc: Date.now(),
-    } satisfies Message;
+    } satisfies ChatMessage;
 
     socket()?.send(JSON.stringify(message));
 
