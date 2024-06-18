@@ -36,7 +36,7 @@ async fn run_actor(mut actor: DeliveryService) {
         tracing::debug!("Processing message");
         match message {
             Message::SendMessage(message) => {
-                let receiver = actor.users_by_name.get(&message.to);
+                let receiver = actor.users_by_name.get(&message.recipient);
                 let Some(receiver) = receiver else {
                     //TODO send error to user if receiver is not found
                     tracing::error!("User not found");
