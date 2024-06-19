@@ -19,7 +19,7 @@ COPY ./client ./
 RUN pnpm run build
 
 # Build the server containing the API and hosting the client
-FROM rust:1.76 as build-server
+FROM rust:1.79 as build-server
 
 # Create a new empty shell project
 RUN USER=root cargo new --bin server
@@ -46,7 +46,7 @@ RUN cargo build --release
 
 # Final base image
 # FROM debian:buster-slim
-FROM rust:1.76-slim-bookworm as final
+FROM rust:1.79-slim-bookworm as final
 
 # Copy the build artifacts from the build stage
 COPY --from=build-server /server/target/release/server .
