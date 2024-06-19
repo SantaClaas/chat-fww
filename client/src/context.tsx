@@ -64,6 +64,13 @@ createEffect<ReturnType<typeof name>>((previous) => {
   return value;
 }, name());
 
+export const backendUrl = new URL(
+  "http://" + import.meta.env.VITE_DEV_BACKEND_HOST ?? window.location.host
+);
+
+const socketUrl = new URL(backendUrl.href);
+socketUrl.protocol = "ws:";
+
 // Use new socket if name changes
 createEffect<WebSocket | undefined>((previous) => {
   const id = name();
@@ -73,7 +80,7 @@ createEffect<WebSocket | undefined>((previous) => {
   previous?.close();
 
   console.debug("Opening socket");
-  const newSocket = new WebSocket(`ws://localhost:3000/messages/${id}`);
+  const newSocket = new WebSocket(`${socketUrl.href}messages/${id}`);
   newSocket.addEventListener("message", handleMessage);
   setSocket(newSocket);
   return newSocket;

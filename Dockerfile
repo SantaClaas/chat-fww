@@ -52,5 +52,6 @@ COPY --from=build-server /server/target/release/server .
 # The ./client directory is where the server looks for when client static files are requested
 COPY --from=build-client /client/dist ./client
 
+EXPOSE 3000
 # Set the startup command to run the application
 CMD ["./server"]
