@@ -65,9 +65,9 @@ createEffect<ReturnType<typeof name>>((previous) => {
 }, name());
 
 export const backendUrl = new URL(
-  "http://" + import.meta.env.VITE_DEV_BACKEND_HOST ?? window.location.host
+  "http://" + (import.meta.env.VITE_DEV_BACKEND_HOST ?? window.location.host)
 );
-
+console.debug("Backend at", backendUrl);
 const socketUrl = new URL(backendUrl.href);
 socketUrl.protocol = "ws:";
 
