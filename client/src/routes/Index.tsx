@@ -1,10 +1,10 @@
 import { For, Show, createEffect, createResource } from "solid-js";
-import { useAppContext } from "../context";
+import { backendUrl, useAppContext } from "../context";
 import { Navigate, useNavigate } from "@solidjs/router";
 import TopAppBar from "../components/TopAppBar";
 
 async function fetchUsers() {
-  const response = await fetch("http://localhost:3000/users");
+  const response = await fetch(backendUrl + "users");
   const data = await response.json();
   return data;
 }
