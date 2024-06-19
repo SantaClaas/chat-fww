@@ -11,6 +11,17 @@ import { ChatMessage } from "./routes/Chat";
 const [name, setName] = createSignal<string | null>(
   localStorage.getItem("name")
 );
+
+createEffect(() => {
+  const value = name();
+  if (value === null) {
+    localStorage.removeItem("name");
+    return;
+  }
+
+  localStorage.setItem("name", value);
+});
+
 const [socket, setSocket] = createSignal<WebSocket | undefined>();
 // Not sure if using a map is better
 const messagesByUser = new Map<string, Signal<ChatMessage[]>>();
