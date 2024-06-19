@@ -37,6 +37,23 @@ async function handleMessage(event: MessageEvent) {
 
 const state = { socket, name, setName, messagesByUser };
 const Context = createContext(state);
+
+// Close socket if name goes to null. Meaningif the user signs out
+createEffect<ReturnType<typeof name>>((previous) => {
+  const value = name();
+  if (!(value === null && previous !== null)) return value;
+
+  const currentSocket = socket();
+  if (currentSocket === undefined) return value;
+
+  console.debug("Closing socket");
+  currentSocket.close();
+  setSocket(undefined);
+
+  return value;
+}, name());
+
+// Use new socket if name changes
 createEffect<WebSocket | undefined>((previous) => {
   const id = name();
   if (id === null) return previous;
@@ -44,6 +61,7 @@ createEffect<WebSocket | undefined>((previous) => {
   previous?.removeEventListener("message", handleMessage);
   previous?.close();
 
+  console.debug("Opening socket");
   const newSocket = new WebSocket(`ws://localhost:3000/messages/${id}`);
   newSocket.addEventListener("message", handleMessage);
   setSocket(newSocket);
