@@ -5,6 +5,7 @@
 - Virtualization of chat message lists. Too many messages will currently have a performance impact
   - Possible solution: [TanStack Virtual](https://tanstack.com/virtual/latest/docs/introduction)
 - Message time is controlled by client and not server and client can write in it whatever they want
+- Removing users when they disappear on the server
 
 # My Wishlist
 
