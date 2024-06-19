@@ -1,9 +1,6 @@
-use std::error::Error;
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
-use crate::actor::user::Handle;
 use crate::actor::{delivery_service, websocket};
-use actor::user;
 use axum::http::StatusCode;
 use axum::{
     extract::{ws::WebSocket, Path, State, WebSocketUpgrade},
@@ -12,7 +9,6 @@ use axum::{
     routing::get,
     Json, Router,
 };
-use tokio::sync::Mutex;
 use tower_http::cors::CorsLayer;
 use tower_http::services::{ServeDir, ServeFile};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
