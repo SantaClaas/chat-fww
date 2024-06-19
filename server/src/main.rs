@@ -14,6 +14,7 @@ use axum::{
 };
 use tokio::sync::Mutex;
 use tower_http::cors::CorsLayer;
+use tower_http::services::{ServeDir, ServeFile};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 mod actor;
@@ -34,17 +35,29 @@ async fn main() {
         .init();
 
     tracing::info!("Setting up");
+    // SPA setup
+    // Not used during development where vite hosts the frontend and we use CORS
+    let serve_client = ServeDir::new("./client")
+        // If the route is a client side navigation route, this will serve the app and let the app router take over the
+        // path handling after the app is loaded
+        .not_found_service(ServeFile::new("./client/index.html"));
 
-    let app = Router::new()
+    let mut app = Router::new()
         .route("/messages/:name", get(websocket_handler))
-        .route("/users", get(get_users))
-        .layer(
+        .route("/users", get(get_users));
+
+    // Not looking nice, but functional to have CORS only in development
+    #[cfg(debug_assertions)]
+    {
+        app = app.layer(
             CorsLayer::new()
-                // .allow_origin("*".parse::<HeaderValue>().unwrap())
                 .allow_origin("http://localhost:5173".parse::<HeaderValue>().unwrap())
-                // .allow_origin("localhost:1421".parse::<HeaderValue>().unwrap())
                 .allow_methods([Method::GET]),
-        )
+        );
+    }
+
+    let app = app
+        .fallback_service(serve_client)
         .with_state(Default::default());
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
