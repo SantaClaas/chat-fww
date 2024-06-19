@@ -64,12 +64,17 @@ createEffect<ReturnType<typeof name>>((previous) => {
   return value;
 }, name());
 
+const isSecureRequired =
+  window.location.protocol === "https:" ||
+  import.meta.env.MODE !== "development";
+
 export const backendUrl = new URL(
-  "http://" + (import.meta.env.VITE_DEV_BACKEND_HOST ?? window.location.host)
+  (isSecureRequired ? "https://" : "http://") +
+    (import.meta.env.VITE_DEV_BACKEND_HOST ?? window.location.host)
 );
 console.debug("Backend at", backendUrl);
 const socketUrl = new URL(backendUrl.href);
-socketUrl.protocol = "ws:";
+socketUrl.protocol = isSecureRequired ? "wss:" : "ws:";
 
 // Use new socket if name changes
 createEffect<WebSocket | undefined>((previous) => {
