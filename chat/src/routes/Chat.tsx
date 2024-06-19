@@ -1,6 +1,7 @@
 import { useNavigate, useParams } from "@solidjs/router";
 import { useAppContext } from "../context";
 import { For, Show, createEffect, createSignal } from "solid-js";
+import TopAppBar from "../components/TopAppBar";
 
 /**
  * This type has to be kept in sync with the server-side types
@@ -81,23 +82,24 @@ export default function Chat() {
 
   return (
     <>
-      <header class="px-1 py-2 grid grid-cols-[3rem,1fr,3rem] gap-1 bg-slate-100">
-        <a href="/" class="p-3 text-slate-900">
-          <span class="sr-only">go back</span>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            height="24px"
-            viewBox="0 -960 960 960"
-            width="24px"
-            fill="currentColor"
-          >
-            <path d="m313-440 224 224-57 56-320-320 320-320 57 56-224 224h487v80H313Z" />
-          </svg>
-        </a>
-        <h1 class="text-xl font-normal content-center text-center">
-          {contactName}
-        </h1>
-      </header>
+      <TopAppBar
+        header={contactName}
+        leadingAction={
+          <a href="/" class="p-3 text-slate-900">
+            <span class="sr-only">go back</span>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              height="24px"
+              viewBox="0 -960 960 960"
+              width="24px"
+              aria-hidden="true"
+              fill="currentColor"
+            >
+              <path d="m313-440 224 224-57 56-320-320 320-320 57 56-224 224h487v80H313Z" />
+            </svg>
+          </a>
+        }
+      />
 
       <main class="bg-slate-100 grid grid-rows-[1fr_auto] px-4 pb-2">
         <Show
@@ -112,7 +114,7 @@ export default function Chat() {
             <For each={messages()}>
               {(message) => (
                 <li
-                  class=" px-4 py-1 max-w-fit text-slate-50"
+                  class="px-4 py-1 max-w-fit text-slate-50"
                   classList={{
                     "bg-gradient-to-br from-slate-800 to-slate-600 rounded-bl-xl rounded-t-xl self-end":
                       message.sender === name(),
@@ -137,7 +139,7 @@ export default function Chat() {
             name="message"
             id="message"
             placeholder="Type a message..."
-            class="block w-full rounded-2xl px-4 border-0 py-1.5 pr-14 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-orange-600 sm:text-sm sm:leading-6"
+            class="block w-full rounded-2xl px-4 border-0 py-1.5 pr-14 text-gray-900 ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-orange-600 sm:text-sm sm:leading-6"
           />
           <div class="absolute inset-y-0 right-0 flex py-1.5 pr-1.5">
             <kbd class="inline-flex items-center px-1 font-sans text-xs text-gray-400 border border-gray-200 rounded-2xl">
