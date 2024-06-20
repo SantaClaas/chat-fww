@@ -24,9 +24,10 @@ function Alert() {
             Don't share sensitive information
           </h3>
           <div class="mt-2 text-sm text-yellow-700">
+            <p>Messages are not stored on the server.</p>
             <p>
-              Anyone using the same name as you can view your messages. Although
-              they are not permanently stored.
+              But anyone using the same name as you will also receive your
+              messages you send and receive.
             </p>
           </div>
         </div>

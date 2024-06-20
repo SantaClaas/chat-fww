@@ -1,8 +1,9 @@
 # Things not covered
 
 - WebSocket recovery when connection is lost
+  - Exponential backoff function could solve this with upper limit after which manual refresh is required
 - User authentication. Currently you just need to know the user name to sign in
-- Virtualization of chat message lists. Too many messages will currently have a performance impact
+- Virtualization of lists like chat messages. Too many messages will currently have a performance impact
   - Possible solution: [TanStack Virtual](https://tanstack.com/virtual/latest/docs/introduction)
 - Message time is controlled by client and not server and client can write in it whatever they want
 - Removing users when they disappear on the server

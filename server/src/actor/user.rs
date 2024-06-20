@@ -15,9 +15,14 @@ struct User {
 
 enum Message {
     AddSocket(websocket::Handle),
-    ProcessSocketMessage(ChatMessage),
-    ReceiveMessage(ChatMessage),
+    ProcessSocketMessage(
+        SocketId,
+        Arc<ChatMessage>,
+    ),
+    ReceiveMessage(Arc<ChatMessage>),
     RemoveSocket(SocketId),
+    AddContact(Arc<str>),
+    RemoveContact(Arc<str>),
 }
 
 async fn run_actor(mut actor: User) {
@@ -26,8 +31,21 @@ async fn run_actor(mut actor: User) {
             Message::AddSocket(socket) => {
                 actor.sockets.push(socket);
             }
-            Message::ProcessSocketMessage(message) => {
-                //TODO send message to all other connected sockets for this user
+            Message::ProcessSocketMessage(source, message) => {
+                // Synchronize message to all other connected sockets for this user
+                for socket in &actor.sockets {
+                    if socket.id == source {
+                        continue;
+                    }
+
+
+                    tracing::debug!("Syncing message");
+                    let result = socket.synchronize_message(message.clone()).await;
+                    if let Err(error) = result {
+                        tracing::error!("Error sending message to socket: {}", error);
+                    }
+                }
+
                 // Send message to the user it is intended for through delivery service
                 let result = actor.delivery_service.send_message(message).await;
                 let Err(error) = result else {
@@ -37,10 +55,9 @@ async fn run_actor(mut actor: User) {
             }
             Message::ReceiveMessage(message) => {
                 // Creating a reference that is easier to clone for each loop iteration
-                let reference = Arc::new(message);
                 //TODO this can easily be parallelized as it is fire and forget
                 for socket in &actor.sockets {
-                    let result = socket.send_message(reference.clone()).await;
+                    let result = socket.send_message(message.clone()).await;
                     if let Err(error) = result {
                         tracing::error!("Error sending message to socket: {}", error);
                     }
@@ -64,6 +81,7 @@ async fn run_actor(mut actor: User) {
 
                 // If the socket is the last one, we can remove the user from the delivery service
                 if actor.sockets.is_empty() {
+                    tracing::debug!("All sockets closed, removing user from delivery service");
                     let result = actor.delivery_service.remove_user(actor.name.clone()).await;
                     // Shut down
                     if let Err(error) = result {
@@ -71,6 +89,22 @@ async fn run_actor(mut actor: User) {
                     }
                     // Shut down anyway?
                     break;
+                }
+            }
+            Message::AddContact(user_name) => {
+                for socket in &actor.sockets {
+                    let result = socket.add_contact(user_name.clone()).await;
+                    if let Err(error) = result {
+                        tracing::error!("Error adding user to socket: {}", error);
+                    }
+                }
+            }
+            Message::RemoveContact(user_name) => {
+                for socket in &actor.sockets {
+                    let result = socket.remove_contact(user_name.clone()).await;
+                    if let Err(error) = result {
+                        tracing::error!("Error removing user from socket: {}", error);
+                    }
                 }
             }
         }
@@ -102,24 +136,33 @@ impl Handle {
     pub(crate) async fn add_socket(
         &self,
         socket: websocket::Handle,
-    ) -> Result<(), impl std::error::Error> {
+    ) -> Result<(), impl Error> {
         self.sender.send(Message::AddSocket(socket)).await
     }
 
     pub(super) async fn process_socket_message(
         &self,
-        message: ChatMessage,
+        source: SocketId,
+        message: Arc<ChatMessage>,
     ) -> Result<(), impl Error + Send + Sync> {
         self.sender
-            .send(Message::ProcessSocketMessage(message))
+            .send(Message::ProcessSocketMessage(source, message))
             .await
     }
 
-    pub(super) async fn receive_message(&self, message: ChatMessage) -> Result<(), impl Error> {
+    pub(super) async fn receive_message(&self, message: Arc<ChatMessage>) -> Result<(), impl Error> {
         self.sender.send(Message::ReceiveMessage(message)).await
     }
 
     pub(super) async fn remove_socket(&self, socket_id: SocketId) -> Result<(), impl Error> {
         self.sender.send(Message::RemoveSocket(socket_id)).await
+    }
+
+    pub(super) async fn add_contact(&self, user_name: Arc<str>) -> Result<(), impl Error> {
+        self.sender.send(Message::AddContact(user_name)).await
+    }
+
+    pub(super) async fn remove_contact(&self, user_name: Arc<str>) -> Result<(), impl Error> {
+        self.sender.send(Message::RemoveContact(user_name)).await
     }
 }

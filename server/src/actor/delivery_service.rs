@@ -6,7 +6,7 @@ use tokio::sync::{mpsc, oneshot};
 
 enum Message {
     //TODO handle case where a user actor is not found
-    SendMessage(ChatMessage),
+    SendMessage(Arc<ChatMessage>),
     GetOrInsertUser(Arc<str>, oneshot::Sender<user::Handle>),
     GetUsers(oneshot::Sender<Arc<[Arc<str>]>>),
     RemoveUser(Arc<str>),
@@ -28,6 +28,19 @@ struct DeliveryService {
 impl DeliveryService {
     fn get_handle(&self) -> Handle {
         self.sender.clone().into()
+    }
+
+    async fn add_available_contact(&self, user_name: Arc<str>) {
+        // Notifying all users of new users kind of defeats the purpose of a start topology, but it
+        // will only get send to the client through websockets, so it shouldn't cause a server
+        // memory problem. Additionally, this is app is only limited in scope anyway.
+        // Also, this loop can be parallelized.
+        for user in self.users_by_name.values() {
+            let result = user.add_contact(user_name.clone()).await;
+            if let Err(error) = result {
+                tracing::error!("Error adding sending new contact to user: {}", error);
+            }
+        }
     }
 }
 
@@ -51,25 +64,30 @@ async fn run_actor(mut actor: DeliveryService) {
             Message::GetOrInsertUser(user_name, respond) => {
                 let entry = actor.users_by_name.get(user_name.as_ref());
 
-                let user = entry.cloned().unwrap_or_else(|| {
-                    let user = user::Handle::new(user_name.clone(), actor.get_handle());
-                    actor.users_by_name.insert(user_name.clone(), user.clone());
-                    user
-                });
+                let user = match entry.cloned() {
+                    Some(user) => user,
+                    None => {
+                        let user = user::Handle::new(user_name.clone(), actor.get_handle());
+                        actor.users_by_name.insert(user_name.clone(), user.clone());
+                        // Add new contact
+                        actor.add_available_contact(user_name.clone()).await;
+
+                        user
+                    }
+                };
 
                 let result = respond.send(user.clone());
+
                 if result.is_ok() {
-                    continue;
+                    tracing::error!("Error sending user handle back");
                 }
-                tracing::error!("Error sending user handle back");
             }
             Message::GetUsers(responder) => {
                 let users = actor.users_by_name.keys().cloned().collect();
                 let result = responder.send(users);
-                if result.is_ok() {
-                    continue;
+                if result.is_err() {
+                    tracing::error!("Error sending users back");
                 }
-                tracing::error!("Error sending users back");
             }
             Message::RemoveUser(name) => {
                 let _ = actor.users_by_name.remove(&name);
@@ -134,7 +152,7 @@ impl Handle {
         Ok(users)
     }
 
-    pub(super) async fn send_message(&self, message: ChatMessage) -> Result<(), impl Error> {
+    pub(super) async fn send_message(&self, message: Arc<ChatMessage>) -> Result<(), impl Error> {
         self.sender.send(Message::SendMessage(message)).await
     }
 
