@@ -1,15 +1,10 @@
-import { For, Show, createEffect, createResource } from "solid-js";
-import { backendUrl, useAppContext } from "../context";
+import { For, Show, createEffect } from "solid-js";
+import { useAppContext } from "../context";
 import { Navigate, useNavigate } from "@solidjs/router";
 import TopAppBar from "../components/TopAppBar";
 
-async function fetchUsers() {
-  const response = await fetch(backendUrl + "users");
-  const data = await response.json();
-  return data;
-}
 export default function Index() {
-  const { socket, name, setName } = useAppContext();
+  const { socket, name, setName, users } = useAppContext();
   const navigate = useNavigate();
 
   if (socket() === undefined || name() === null)
@@ -20,9 +15,6 @@ export default function Index() {
   });
 
   // Available chats
-
-  const [users] = createResource<string[]>(fetchUsers);
-
   const usersWithoutSelf = () => users()?.filter((user) => user !== name());
 
   return (
@@ -51,7 +43,7 @@ export default function Index() {
             when={usersWithoutSelf() && usersWithoutSelf()!.length > 0}
             fallback={<p>No one available to chat</p>}
           >
-            <ul class="bg-slate-50 rounded-3xl flex flex-col gap-4 h-full">
+            <ul class="bg-slate-50 rounded-3xl flex flex-col h-full">
               <For each={usersWithoutSelf()}>
                 {(user) => (
                   <li class="text-base pl-4 pr-6 py-2 min-h-14 content-center">

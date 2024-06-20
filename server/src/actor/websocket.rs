@@ -2,12 +2,25 @@ use ::axum::extract::ws::Message as WebSocketMessage;
 use axum::extract::ws as axum;
 use nanoid::nanoid;
 use std::sync::Arc;
+use serde::Serialize;
 use tokio::sync::mpsc;
 
 use super::{user, ChatMessage};
 
 enum Message {
     SendMessage(Arc<ChatMessage>),
+    AddContact { name: Arc<str> },
+    RemoveContact { name: Arc<str> },
+    SynchronizeMessage { message: Arc<ChatMessage> },
+}
+
+#[derive(Serialize)]
+#[serde(tag = "type")]
+enum ClientMessage {
+    ChatMessage { message: Arc<ChatMessage> },
+    AddUser { name: Arc<str> },
+    RemoveUser { name: Arc<str> },
+    SynchronizeMessage { message: Arc<ChatMessage> },
 }
 
 #[derive(Clone, PartialEq, Eq)]
@@ -21,7 +34,7 @@ struct WebSocket {
     user: user::Handle,
 }
 
-async fn process_socket_message(user: &user::Handle, json: String) {
+async fn process_socket_message(id: SocketId, user: &user::Handle, json: String) {
     //TODO validate message sender name and send back error if not
     let result = serde_json::from_str::<ChatMessage>(&json);
     let message = match result {
@@ -32,27 +45,44 @@ async fn process_socket_message(user: &user::Handle, json: String) {
         }
     };
 
-    let result = user.process_socket_message(message).await;
+    let result = user.process_socket_message(id, message.into()).await;
     if let Err(error) = result {
         tracing::error!("Error processing message: {:?}", error);
+    }
+}
+
+async fn send_to_socket(socket: &mut axum::WebSocket, message: ClientMessage) {
+    let json = serde_json::to_string(&message);
+    let result = match json {
+        Ok(json) => socket.send(WebSocketMessage::Text(json)).await,
+        Err(error) => {
+            tracing::error!("Error serializing message: {:?}", error);
+            return;
+        }
+    };
+
+    if let Err(error) = result {
+        tracing::error!("Error sending message through websocket: {:?}", error);
     }
 }
 
 async fn process_actor_message(socket: &mut axum::WebSocket, message: Message) {
     match message {
         Message::SendMessage(message) => {
-            let json = serde_json::to_string(&message);
-            let result = match json {
-                Ok(json) => socket.send(WebSocketMessage::Text(json)).await,
-                Err(error) => {
-                    tracing::error!("Error serializing message: {:?}", error);
-                    return;
-                }
-            };
-
-            if let Err(error) = result {
-                tracing::error!("Error sending message through websocket: {:?}", error);
-            }
+            let message = ClientMessage::ChatMessage { message };
+            send_to_socket(socket, message).await;
+        }
+        Message::AddContact { name } => {
+            let message = ClientMessage::AddUser { name };
+            send_to_socket(socket, message).await;
+        }
+        Message::RemoveContact { name } => {
+            let message = ClientMessage::RemoveUser { name };
+            send_to_socket(socket, message).await;
+        }
+        Message::SynchronizeMessage { message } => {
+            let message = ClientMessage::SynchronizeMessage { message };
+            send_to_socket(socket, message).await;
         }
     }
 }
@@ -63,8 +93,6 @@ async fn run_actor(mut actor: WebSocket) {
             Some(message) = actor.receiver.recv() => process_actor_message(&mut actor.socket, message).await,
             // Stop actor on error
             Some(Ok(message)) = actor.socket.recv() => {
-                tracing::info!("Received message: {:?}", message);
-
                 match message {
                     WebSocketMessage::Close(_) => {
                         //TODO remove socket from user to clean up or we have a memory leak
@@ -74,7 +102,7 @@ async fn run_actor(mut actor: WebSocket) {
                         tracing::error!("Error removing socket from user: {:?}", error);
                         break;
                     },
-                    WebSocketMessage::Text(text) => process_socket_message(&actor.user, text.into()).await,
+                    WebSocketMessage::Text(text) => process_socket_message(actor.id.clone(), &actor.user, text.into()).await,
                     other => tracing::error!("Unexpected message type: {:?}", other),
                 }
             },
@@ -113,5 +141,17 @@ impl Handle {
         message: Arc<ChatMessage>,
     ) -> Result<(), impl std::error::Error> {
         self.sender.send(Message::SendMessage(message)).await
+    }
+
+    pub(super) async fn add_contact(&self, name: Arc<str>) -> Result<(), impl std::error::Error> {
+        self.sender.send(Message::AddContact { name }).await
+    }
+
+    pub(super) async fn remove_contact(&self, name: Arc<str>) -> Result<(), impl std::error::Error> {
+        self.sender.send(Message::RemoveContact { name }).await
+    }
+
+    pub(super) async fn synchronize_message(&self, message: Arc<ChatMessage>) -> Result<(), impl std::error::Error> {
+        self.sender.send(Message::SynchronizeMessage { message }).await
     }
 }
