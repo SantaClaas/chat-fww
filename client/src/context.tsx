@@ -138,6 +138,7 @@ createEffect<ReturnType<typeof name>>((previous) => {
   return value;
 }, name());
 
+
 // Use new socket if name changes
 createEffect<WebSocket | undefined>((previous) => {
   const id = name();
