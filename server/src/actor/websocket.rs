@@ -1,8 +1,8 @@
 use ::axum::extract::ws::Message as WebSocketMessage;
 use axum::extract::ws as axum;
 use nanoid::nanoid;
-use std::sync::Arc;
 use serde::Serialize;
+use std::sync::Arc;
 use tokio::sync::mpsc;
 
 use super::{user, ChatMessage};
@@ -26,6 +26,7 @@ enum ClientMessage {
 #[derive(Clone, PartialEq, Eq)]
 pub(super) struct SocketId(Arc<str>);
 
+/// A websocket actor represents a single websocket connection to a users device
 struct WebSocket {
     id: SocketId,
     socket: axum::WebSocket,
@@ -147,11 +148,19 @@ impl Handle {
         self.sender.send(Message::AddContact { name }).await
     }
 
-    pub(super) async fn remove_contact(&self, name: Arc<str>) -> Result<(), impl std::error::Error> {
+    pub(super) async fn remove_contact(
+        &self,
+        name: Arc<str>,
+    ) -> Result<(), impl std::error::Error> {
         self.sender.send(Message::RemoveContact { name }).await
     }
 
-    pub(super) async fn synchronize_message(&self, message: Arc<ChatMessage>) -> Result<(), impl std::error::Error> {
-        self.sender.send(Message::SynchronizeMessage { message }).await
+    pub(super) async fn synchronize_message(
+        &self,
+        message: Arc<ChatMessage>,
+    ) -> Result<(), impl std::error::Error> {
+        self.sender
+            .send(Message::SynchronizeMessage { message })
+            .await
     }
 }

@@ -6,6 +6,9 @@ use tokio::sync::mpsc::{self};
 
 use super::{delivery_service, websocket, ChatMessage};
 
+/// A user actor represents a user that can send and receive messages
+/// It also keeps track of all sockets that are connected to it as a user can have multiple devices connected a once
+/// and the messages are sent to all of them.
 struct User {
     delivery_service: delivery_service::Handle,
     name: Arc<str>,
@@ -15,10 +18,7 @@ struct User {
 
 enum Message {
     AddSocket(websocket::Handle),
-    ProcessSocketMessage(
-        SocketId,
-        Arc<ChatMessage>,
-    ),
+    ProcessSocketMessage(SocketId, Arc<ChatMessage>),
     ReceiveMessage(Arc<ChatMessage>),
     RemoveSocket(SocketId),
     AddContact(Arc<str>),
@@ -37,7 +37,6 @@ async fn run_actor(mut actor: User) {
                     if socket.id == source {
                         continue;
                     }
-
 
                     tracing::debug!("Syncing message");
                     let result = socket.synchronize_message(message.clone()).await;
@@ -133,10 +132,7 @@ impl Handle {
         Self { sender }
     }
 
-    pub(crate) async fn add_socket(
-        &self,
-        socket: websocket::Handle,
-    ) -> Result<(), impl Error> {
+    pub(crate) async fn add_socket(&self, socket: websocket::Handle) -> Result<(), impl Error> {
         self.sender.send(Message::AddSocket(socket)).await
     }
 
@@ -150,7 +146,10 @@ impl Handle {
             .await
     }
 
-    pub(super) async fn receive_message(&self, message: Arc<ChatMessage>) -> Result<(), impl Error> {
+    pub(super) async fn receive_message(
+        &self,
+        message: Arc<ChatMessage>,
+    ) -> Result<(), impl Error> {
         self.sender.send(Message::ReceiveMessage(message)).await
     }
 

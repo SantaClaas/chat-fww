@@ -1,5 +1,6 @@
 import { JSX, VoidProps } from "solid-js";
 
+/** A top app bar component inspired by Material You */
 export default function TopAppBar({
   header,
   leadingAction,
