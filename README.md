@@ -8,7 +8,7 @@ The easiest way to check out what the app does and how the code runs is to visit
 
 The second easiest way to demo the app is using the docker image hosted on the github container registry [ghcr.io/santaclaas/chat-fww:main](https://ghcr.io/santaclaas/chat-fww:main) or building it yourself from the [`Dockerfile`](/Dockerfile). This however requires a Docker installation and knowledge how to wield that power.
 
-The third way is only recommended if you're already familiar with the tools used to built this and you want to run it directly on your machine. You need to have the tools installed and know how to run the Vite app in [`./client/`](./client/) and the Rust server in [`./server/`](./server/). Detailed instructions would go beyond the scope of this document but they are web-searchable.
+The third way is only recommended if you're already familiar with the tools used to built this and you want to run it directly on your machine. You need to have the tools installed and know how to run the [Vite](https://vitejs.dev/) app in [`./client/`](./client/) and the Rust server in [`./server/`](./server/). [How to install Rust](https://www.rust-lang.org/tools/install) for the server app. [How to install Node.js ](https://nodejs.org/en/learn/getting-started/how-to-install-nodejs) for the Vite app.
 
 # Cool things in the app
 
