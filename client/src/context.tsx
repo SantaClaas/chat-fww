@@ -9,6 +9,7 @@ import {
 } from "solid-js";
 import { ChatMessage } from "./routes/Chat";
 
+// Equivalent to the server-side Rust enum type
 // #[derive(Serialize)]
 // #[serde(tag = "type")]
 // enum ClientMessage {
@@ -60,6 +61,7 @@ function addChatMessage(message: ChatMessage, contact: string) {
   setMessages((messages) => [message, ...messages]);
 }
 
+// Some things to ensure security in production
 const isSecureRequired =
   window.location.protocol === "https:" ||
   import.meta.env.MODE !== "development";
@@ -123,7 +125,7 @@ async function handleMessage(event: MessageEvent) {
 const state = { socket, name, setName, messagesByUser, users };
 const Context = createContext(state);
 
-// Close socket if name goes to null. Meaningif the user signs out
+// Close socket if name goes to null. Meaning the user signs out
 createEffect<ReturnType<typeof name>>((previous) => {
   const value = name();
   if (!(value === null && previous !== null)) return value;
@@ -137,7 +139,6 @@ createEffect<ReturnType<typeof name>>((previous) => {
 
   return value;
 }, name());
-
 
 // Use new socket if name changes
 createEffect<WebSocket | undefined>((previous) => {
@@ -154,6 +155,7 @@ createEffect<WebSocket | undefined>((previous) => {
   return newSocket;
 }, socket());
 
+// Custom hooks and component to simplify usage
 export function ContextProvider(properties: { children: JSX.Element }) {
   return (
     <Context.Provider value={state}>{properties.children}</Context.Provider>

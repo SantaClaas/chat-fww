@@ -3,6 +3,9 @@ import { useAppContext } from "../context";
 import { Navigate, useNavigate } from "@solidjs/router";
 import TopAppBar from "../components/TopAppBar";
 
+/**
+ * Main page where users land on after set-up and see a list of available chats
+ */
 export default function Index() {
   const { socket, name, setName, users } = useAppContext();
   const navigate = useNavigate();

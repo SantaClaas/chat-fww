@@ -81,7 +81,6 @@ async fn websocket_handler(
     websocket.on_upgrade(move |socket| create_actor(socket, state, name.into()))
 }
 
-// 2/3e, duck2duck encryption, melt
 async fn create_actor(stream: WebSocket, State(state): State<AppState>, name: Arc<str>) {
     let result = state.delivery_service.get_or_insert(name).await;
 

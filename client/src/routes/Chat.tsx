@@ -11,11 +11,14 @@ export type ChatMessage = {
   sender: string;
   text: string;
   /**
-   * UTC unix timestamp in seconds
+   * UTC unix timestamp in milliseconds as it comes out of Date.now()
    */
   time_utc: number;
 };
 
+/**
+ * The...yes chat, how did you know?
+ */
 export default function Chat() {
   const parameters = useParams();
   const { socket, name, messagesByUser } = useAppContext();

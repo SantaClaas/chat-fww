@@ -2,6 +2,9 @@ import { useNavigate } from "@solidjs/router";
 import { useAppContext } from "../context";
 import { createEffect } from "solid-js";
 
+/**
+ * Alert component to because we are have the decency to inform users of potential risks
+ */
 function Alert() {
   return (
     <div class="p-4 rounded-md bg-yellow-50">
@@ -36,6 +39,10 @@ function Alert() {
   );
 }
 
+/**
+ * Set up page where users land on and enter their name.
+ * This is kind of the authentication step even though this is no real authentciation
+ */
 export default function SetUp() {
   const { name, setName } = useAppContext();
   function handleSubmit(event: SubmitEvent) {
@@ -46,6 +53,7 @@ export default function SetUp() {
   }
 
   const navigate = useNavigate();
+  // Go to chat list page if already set up
   createEffect(() => {
     if (name() === null) return;
     navigate("/");
@@ -56,7 +64,6 @@ export default function SetUp() {
       <Alert />
       <div class="flex row-start-2 min-h-full flex-1 flex-col justify-center px-6 py-12 lg:px-8">
         <div class="sm:mx-auto sm:w-full sm:max-w-sm">
-          {/* TODO use melt logo  */}
           <img
             class="mx-auto h-10 w-auto rounded-md"
             src="/logo-04.svg"
